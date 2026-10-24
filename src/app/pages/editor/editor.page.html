@@ -72,8 +72,8 @@
       <!-- ============ BOTTOM PANEL ============ -->
       <section class="panel" [class.open]="panelOpen" [class.full]="panelFull">
         <div class="panel-bar">
-          <button class="ptab" [class.on]="panelOpen && panelTab === 'terminal'" (click)="panelOpen && panelTab === 'terminal' ? togglePanel() : showPanel('terminal')">⌨ Terminal</button>
-          <button class="ptab" [class.on]="panelOpen && panelTab === 'preview'" (click)="panelOpen && panelTab === 'preview' ? togglePanel() : (showPanel('preview'), reloadPreview())">👁 Preview</button>
+          <button class="ptab" [class.on]="panelOpen && panelTab === 'terminal'" (click)="onTerminalTabClick()">⌨ Terminal</button>
+          <button class="ptab" [class.on]="panelOpen && panelTab === 'preview'" (click)="onPreviewTabClick()">👁 Preview</button>
           <span class="spacer"></span>
           <ng-container *ngIf="panelOpen">
             <button class="icon sm" *ngIf="panelTab === 'terminal'" (click)="clearTerm()" aria-label="Clear">🧹</button>
