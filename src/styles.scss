@@ -1,0 +1,43 @@
+:root {
+  --ion-background-color: #0e0e10;
+  --ion-text-color: #e6e6e6;
+  --ion-font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --zeno-bg: #0e0e10;
+  --zeno-panel: #1e1e1e;
+  --zeno-panel-2: #17171a;
+  --zeno-border: #2a2a2e;
+  --zeno-accent: #00e676;
+  --zeno-text: #d4d4d4;
+  --zeno-dim: #8a8a92;
+}
+
+html, body {
+  background: #0e0e10;
+  color: #e6e6e6;
+  height: 100%;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+ion-app, ion-router-outlet { background: #0e0e10; }
+
+// Alerts & toasts in dark theme (Ionic overlays)
+ion-alert {
+  --background: #1e1e1e;
+  --ion-text-color: #e6e6e6;
+  .alert-wrapper { background: #1e1e1e; border: 1px solid #2a2a2e; }
+  .alert-title, .alert-message, .alert-radio-label, .alert-checkbox-label { color: #e6e6e6; }
+  .alert-input { color: #fff; background: #0e0e10; border: 1px solid #2a2a2e; border-radius: 6px; padding: 8px; }
+  .alert-button { color: #00e676; }
+  .alert-button.danger { color: #ff5370; }
+}
+
+ion-toast.zeno-toast {
+  --background: #1e1e1e;
+  --color: #00e676;
+  --border-radius: 10px;
+  --box-shadow: 0 6px 24px rgba(0, 230, 118, 0.18);
+  border: 1px solid #00e67655;
+}
+
+.monaco-editor, .monaco-editor-background { background-color: #1e1e1e !important; }

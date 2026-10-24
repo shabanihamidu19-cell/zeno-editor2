@@ -1,0 +1,174 @@
+<div class="zeno" [class.wide]="isWide">
+
+  <!-- ============ TOP BAR ============ -->
+  <header class="top">
+    <button class="icon" (click)="sidebarOpen = !sidebarOpen" aria-label="Files">☰</button>
+    <button class="proj" (click)="projectMenu()">
+      <span class="logo">{{'{'}}Z{{'}'}}</span>
+      <span class="pname">{{ project || 'Zeno' }}</span>
+      <span class="caret">▾</span>
+    </button>
+    <span class="spacer"></span>
+    <button class="icon" (click)="saveActive(true)" aria-label="Save">💾</button>
+    <button class="run" (click)="run()">▶ <span>Run</span></button>
+    <button class="ai-btn" [class.on]="aiOpen" (click)="toggleAi()">✨ <span>AI</span></button>
+  </header>
+
+  <div class="body">
+
+    <!-- ============ FILE EXPLORER ============ -->
+    <div class="backdrop" *ngIf="sidebarOpen && !isWide" (click)="sidebarOpen = false"></div>
+    <aside class="sidebar" [class.open]="sidebarOpen">
+      <div class="side-head">
+        <strong>FILES</strong>
+        <span class="spacer"></span>
+        <button class="icon sm" (click)="newFile()" aria-label="New file">📄＋</button>
+        <button class="icon sm" (click)="newFolder()" aria-label="New folder">📁＋</button>
+        <button class="icon sm" (click)="refreshTree()" aria-label="Refresh">⟳</button>
+      </div>
+      <div class="tree">
+        <div class="row" *ngFor="let r of rows; trackBy: trackRow"
+             [class.active]="r.node.path === activePath"
+             [class.sel]="r.node.isDir && r.node.path === selectedDir"
+             [style.paddingLeft.px]="10 + r.depth * 18"
+             (click)="onRowTap(r)">
+          <span class="chev">{{ r.node.isDir ? (expanded.has(r.node.path) ? '▾' : '▸') : '' }}</span>
+          <span class="ico">{{ fileIcon(r.node.name, r.node.isDir, expanded.has(r.node.path)) }}</span>
+          <span class="nm">{{ r.node.name }}</span>
+          <button class="more" (click)="rowMenu(r, $event)" aria-label="Actions">⋮</button>
+        </div>
+        <div class="empty-tree" *ngIf="!rows.length && !loading">
+          Empty project.<br>Tap 📄＋ to create a file.
+        </div>
+      </div>
+      <div class="side-foot">{{ storageLabel }}</div>
+    </aside>
+
+    <!-- ============ CENTER ============ -->
+    <main class="center">
+
+      <div class="tabs" *ngIf="tabs.length">
+        <div class="tab" *ngFor="let t of tabs; trackBy: trackTab"
+             [class.active]="t.path === activePath"
+             (click)="selectTab(t)"
+             (touchstart)="onTabTouchStart($event)"
+             (touchend)="onTabTouchEnd($event, t)">
+          <span class="ico">{{ fileIcon(t.name, false) }}</span>
+          <span class="tname">{{ t.name }}</span>
+          <span class="dot" *ngIf="t.dirty">●</span>
+          <button class="x" (click)="closeTab(t, $event)" aria-label="Close tab">×</button>
+        </div>
+      </div>
+
+      <div class="editor-wrap">
+        <div #editorHost class="editor"></div>
+        <div class="empty" *ngIf="!tabs.length">
+          <div class="big">{{'{'}}Z{{'}'}}</div>
+          <div class="ttl">Zeno Editor</div>
+          <div class="sub">{{ loading ? 'Loading…' : 'Open a file from ☰ to start coding' }}</div>
+        </div>
+      </div>
+
+      <!-- ============ BOTTOM PANEL ============ -->
+      <section class="panel" [class.open]="panelOpen" [class.full]="panelFull">
+        <div class="panel-bar">
+          <button class="ptab" [class.on]="panelOpen && panelTab === 'terminal'" (click)="panelOpen && panelTab === 'terminal' ? togglePanel() : showPanel('terminal')">⌨ Terminal</button>
+          <button class="ptab" [class.on]="panelOpen && panelTab === 'preview'" (click)="panelOpen && panelTab === 'preview' ? togglePanel() : (showPanel('preview'), reloadPreview())">👁 Preview</button>
+          <span class="spacer"></span>
+          <ng-container *ngIf="panelOpen">
+            <button class="icon sm" *ngIf="panelTab === 'terminal'" (click)="clearTerm()" aria-label="Clear">🧹</button>
+            <button class="icon sm" *ngIf="panelTab === 'preview'" (click)="reloadPreview()" aria-label="Reload">⟳</button>
+            <button class="icon sm" (click)="splitPreview()" aria-label="Split view">◧</button>
+            <button class="icon sm" (click)="panelFull = !panelFull" aria-label="Expand">{{ panelFull ? '▾' : '▴' }}</button>
+          </ng-container>
+        </div>
+
+        <div class="panel-body" [hidden]="!panelOpen">
+          <div class="term" #termBox [hidden]="panelTab !== 'terminal'">
+            <div class="tl" *ngFor="let l of termLines" [ngClass]="l.level">{{ l.text }}</div>
+            <div class="tl sys" *ngIf="!termLines.length">Zeno terminal — type <b>help</b>. Run JS/TS/Python files with ▶.</div>
+          </div>
+          <form class="term-in" *ngIf="panelTab === 'terminal'" (submit)="submitTerm(); $event.preventDefault()">
+            <span class="prompt">$</span>
+            <input name="termInput" [(ngModel)]="termInput" autocomplete="off" autocapitalize="off" spellcheck="false"
+                   placeholder="console.log(1+1)  |  py print(2**8)  |  help"
+                   (keydown.arrowup)="termHistoryNav(-1)" (keydown.arrowdown)="termHistoryNav(1)" />
+            <button type="submit" class="icon sm">⏎</button>
+          </form>
+          <iframe #previewFrame class="preview" [hidden]="panelTab !== 'preview'"
+                  sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ AI PANEL ============ -->
+    <aside class="ai" [class.open]="aiOpen">
+      <div class="ai-head">
+        <div class="vision" [class.active]="true">
+          <span class="pulse"></span>
+          <div>
+            <div class="vt">Zeno AI</div>
+            <div class="vs">Vision Active · {{ visionTabs }} tab{{ visionTabs === 1 ? '' : 's' }} in sight</div>
+          </div>
+        </div>
+        <span class="spacer"></span>
+        <button class="icon sm" (click)="toggleSettings()" aria-label="Settings">⚙</button>
+        <button class="icon sm" (click)="aiOpen = false" aria-label="Close">✕</button>
+      </div>
+
+      <div class="ai-controls">
+        <label class="switch">
+          <input type="checkbox" [ngModel]="autoMode" (ngModelChange)="autoMode = $event" />
+          <span class="track"><span class="thumb"></span></span>
+          <span class="lbl">Auto Debug Mode</span>
+        </label>
+        <button class="chip" (click)="ai.fixOfflineNow()">🛠 Fix offline</button>
+      </div>
+
+      <div class="settings" *ngIf="settingsOpen">
+        <label>API Key
+          <input type="password" [(ngModel)]="settingsDraft.apiKey" placeholder="sk-…" autocomplete="off" />
+        </label>
+        <label>Endpoint (OpenAI-compatible)
+          <input type="text" [(ngModel)]="settingsDraft.endpoint" placeholder="https://api.openai.com/v1/chat/completions" />
+        </label>
+        <label>Model
+          <input type="text" [(ngModel)]="settingsDraft.model" placeholder="gpt-4o-mini" />
+        </label>
+        <button class="primary" (click)="saveSettings()">Save settings</button>
+        <p class="hint">The key stays on this device. Offline fixes work without any key.</p>
+      </div>
+
+      <div class="chat" #chatBox>
+        <div class="welcome" *ngIf="!ai.chat.length">
+          <p>I can see <b>all your open tabs</b>, project files, editor errors and the terminal output.</p>
+          <div class="quick">
+            <button class="chip" (click)="quickAsk('Find and fix the errors in my current file.')">Fix errors</button>
+            <button class="chip" (click)="quickAsk('Explain what my current file does.')">Explain file</button>
+            <button class="chip" (click)="quickAsk('Suggest improvements for my current file.')">Improve code</button>
+          </div>
+          <p class="hint" *ngIf="!ai.hasApiKey">Online brain needs an API key (⚙). Offline auto-fix is ready now.</p>
+        </div>
+
+        <div class="msg" *ngFor="let m of ai.chat" [ngClass]="m.role">
+          <div class="bubble">{{ replyText(m) }}</div>
+          <div class="diff" *ngIf="m.fix">
+            <div class="dl" *ngFor="let l of visibleDiff(m.fix)" [ngClass]="l.type">
+              <span class="sign">{{ l.type === 'add' ? '+' : l.type === 'del' ? '−' : ' ' }}</span><span class="tx">{{ l.text }}</span>
+            </div>
+            <button class="primary" [disabled]="m.applied" (click)="applyFix(m)">{{ m.applied ? '✔ Applied' : 'Apply Fix' }}</button>
+          </div>
+        </div>
+        <div class="msg assistant" *ngIf="ai.busy"><div class="bubble typing">Zeno is thinking…</div></div>
+      </div>
+
+      <form class="ai-in" (submit)="sendAi(); $event.preventDefault()">
+        <input name="aiInput" [(ngModel)]="aiInput" placeholder="Ask Zeno about your code…" autocomplete="off" />
+        <button type="submit" class="primary sm" [disabled]="ai.busy">Send</button>
+      </form>
+    </aside>
+  </div>
+
+  <!-- floating AI button -->
+  <button class="fab" *ngIf="!aiOpen" (click)="toggleAi()" aria-label="Open Zeno AI">✨</button>
+</div>

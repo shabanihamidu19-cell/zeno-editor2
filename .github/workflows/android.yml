@@ -1,0 +1,36 @@
+name: Build Zeno Editor APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build web + add Android + sync
+        run: bash scripts/setup-android.sh
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zeno-editor-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
